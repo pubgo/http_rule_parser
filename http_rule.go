@@ -34,25 +34,21 @@ var (
 //     Verb     = ":" LITERAL ;
 
 type HttpRule struct {
-	Pos      lexer.Position
-	Slash    string    `"/"`
+	Slash    string    `@"/"`
 	Segments *Segments `@@!`
 	Verb     *string   `(":" @Ident)?`
 }
 
 type Segments struct {
-	Pos      lexer.Position
 	Segments []*Segment `@@ ("/" @@)*`
 }
 
 type Segment struct {
-	Pos      lexer.Position
 	Path     *string   `@("*" "*" | "*" | Ident)`
 	Variable *Variable `| @@`
 }
 
 type Variable struct {
-	Pos      lexer.Position
 	Fields   []string  `"{" @Ident ("." @Ident)*`
 	Segments *Segments `("=" @@)? "}"`
 }

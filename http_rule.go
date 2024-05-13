@@ -1,8 +1,10 @@
 package http_rule
 
 import (
-	"github.com/pubgo/funk/assert"
 	"strings"
+
+	"github.com/pubgo/funk/assert"
+	"github.com/pubgo/funk/errors"
 
 	"github.com/alecthomas/participle/v2"
 	"github.com/alecthomas/participle/v2/lexer"
@@ -62,6 +64,54 @@ type Route struct {
 	Paths []string
 	Verb  *string
 	Vars  []*pathVariable
+}
+
+type PathVar struct {
+	Fields []string
+	Value  string
+}
+
+func (r Route) Match(urls []string, verb string) ([]PathVar, error) {
+	if len(urls) < len(r.Paths) {
+		return nil, errors.New("urls length is less than path length")
+	}
+
+	if r.Verb != nil {
+		if generic.FromPtr(r.Verb) != verb {
+			return nil, errors.New("verb is not match")
+		}
+	}
+
+	for i := range r.Paths {
+		path := r.Paths[i]
+		if path == Star {
+			continue
+		}
+
+		if path == urls[i] {
+			continue
+		}
+
+		if path == StarStar {
+			continue
+		}
+
+		return nil, errors.New("path is not match")
+	}
+
+	var vv []PathVar
+	for _, v := range r.Vars {
+		pathVar := PathVar{Fields: v.Fields}
+		if v.end > 0 {
+			pathVar.Value = strings.Join(urls[v.start:v.end+1], "/")
+		} else {
+			pathVar.Value = strings.Join(urls[v.start:], "/")
+		}
+
+		vv = append(vv, pathVar)
+	}
+
+	return vv, nil
 }
 
 func (r Route) String() string {
@@ -129,4 +179,8 @@ func ParseToRoute(rule *HttpRule) *Route {
 	}
 
 	return r
+}
+
+func Parse(url string) (*HttpRule, error) {
+	return parser.ParseString("", url)
 }

@@ -2,24 +2,39 @@ package http_rule
 
 import (
 	"os"
+	"reflect"
 	"strings"
 	"testing"
 
 	"github.com/alecthomas/participle/v2"
-	"github.com/pubgo/funk/assert"
+	asserts "github.com/pubgo/funk/assert"
 	"github.com/pubgo/funk/pretty"
 )
 
 const url1 = "/v1/users/{aa.ba.ca=hh/*}/hello/{hello.abc}/*/hhh/*/messages/{messageId=nn/ss/**}:change"
 
 func TestMatch(t *testing.T) {
-	route := ParseToRoute(assert.Exit1(Parse(url1)))
-	vars := assert.Must1(route.Match([]string{"v1", "users", "hh", "123", "hello", "vvv", "*", "hhh", "*", "messages", "nn", "ss", "vv", "33"}, "change"))
-	t.Log(vars)
+	route := ParseToRoute(asserts.Exit1(Parse(url1)))
+	vars := asserts.Must1(route.Match([]string{"v1", "users", "hh", "123", "hello", "vvv", "*", "hhh", "*", "messages", "nn", "ss", "vv", "33"}, "change"))
+	asserts.If(len(vars) != 3, "not match")
+	asserts.If(vars[0].Value != "hh/123", "not match")
+	asserts.If(!reflect.DeepEqual(vars[0].Fields, []string{"aa", "ba", "ca"}), "not match")
+	asserts.If(vars[1].Value != "vvv", "not match")
+	asserts.If(!reflect.DeepEqual(vars[1].Fields, []string{"hello", "abc"}), "not match")
+	asserts.If(vars[2].Value != "nn/ss/vv/33", "not match")
+	asserts.If(!reflect.DeepEqual(vars[2].Fields, []string{"messageId"}), "not match")
+	pretty.Println(vars)
+}
+
+func BenchmarkMatch(b *testing.B) {
+	route := ParseToRoute(asserts.Exit1(Parse(url1)))
+	for i := 0; i < b.N; i++ {
+		_ = asserts.Must1(route.Match([]string{"v1", "users", "hh", "123", "hello", "vvv", "*", "hhh", "*", "messages", "nn", "ss", "vv", "33"}, "change"))
+	}
 }
 
 func TestParse(t *testing.T) {
-	ini := assert.Must1(parser.Parse("",
+	ini := asserts.Must1(parser.Parse("",
 		strings.NewReader(url1),
 		participle.Trace(os.Stdout),
 	))
@@ -29,7 +44,7 @@ func TestParse(t *testing.T) {
 	pretty.Println(pp)
 
 	t.Log(pp.String())
-	p1 := assert.Must1(parser.Parse("", strings.NewReader(pp.String())))
+	p1 := asserts.Must1(parser.Parse("", strings.NewReader(pp.String())))
 	if pp2 := ParseToRoute(p1).String(); pp2 != pp.String() {
 		t.Fatal("not equal", pp2, pp.String())
 	}

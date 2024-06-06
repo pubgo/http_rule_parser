@@ -41,6 +41,8 @@ func TestParse(t *testing.T) {
 
 	pretty.Println(ini)
 	pp := ParseToRoute(ini)
+	asserts.If(!reflect.DeepEqual(pp.Paths, []string{"v1", "users", "hh", "*", "hello", "*", "*", "hhh", "*", "messages", "nn", "ss", "**"}), "not match")
+	asserts.If(*pp.Verb != "change", "not match")
 	pretty.Println(pp)
 
 	t.Log(pp.String())

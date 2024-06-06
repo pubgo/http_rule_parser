@@ -1,6 +1,7 @@
 package http_rule
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/pubgo/funk/assert"
@@ -12,8 +13,8 @@ import (
 )
 
 const (
-	StarStar = "**"
-	Star     = "*"
+	DoubleStar = "**"
+	Star       = "*"
 )
 
 var (
@@ -60,7 +61,7 @@ type pathVariable struct {
 	start, end int
 }
 
-type Route struct {
+type RoutePath struct {
 	Paths []string
 	Verb  *string
 	Vars  []*pathVariable
@@ -71,14 +72,14 @@ type PathVar struct {
 	Value  string
 }
 
-func (r Route) Match(urls []string, verb string) ([]PathVar, error) {
+func (r RoutePath) Match(urls []string, verb string) ([]PathVar, error) {
 	if len(urls) < len(r.Paths) {
-		return nil, errors.New("urls length is less than path length")
+		return nil, errors.New("urls length not match")
 	}
 
 	if r.Verb != nil {
 		if generic.FromPtr(r.Verb) != verb {
-			return nil, errors.New("verb is not match")
+			return nil, errors.New("verb not match")
 		}
 	}
 
@@ -92,7 +93,7 @@ func (r Route) Match(urls []string, verb string) ([]PathVar, error) {
 			continue
 		}
 
-		if path == StarStar {
+		if path == DoubleStar {
 			continue
 		}
 
@@ -114,7 +115,7 @@ func (r Route) Match(urls []string, verb string) ([]PathVar, error) {
 	return vv, nil
 }
 
-func (r Route) String() string {
+func (r RoutePath) String() string {
 	url := "/"
 
 	paths := make([]string, len(r.Paths))
@@ -144,7 +145,7 @@ func (r Route) String() string {
 	return url
 }
 
-func handleSegments(s *Segment, rr *Route) {
+func handleSegments(s *Segment, rr *RoutePath) {
 	if s.Path != nil {
 		rr.Paths = append(rr.Paths, *s.Path)
 		return
@@ -159,7 +160,7 @@ func handleSegments(s *Segment, rr *Route) {
 		}
 	}
 
-	if len(rr.Paths) > 0 && rr.Paths[len(rr.Paths)-1] == StarStar {
+	if len(rr.Paths) > 0 && rr.Paths[len(rr.Paths)-1] == DoubleStar {
 		vv.end = -1
 	} else {
 		vv.end = len(rr.Paths) - 1
@@ -168,8 +169,8 @@ func handleSegments(s *Segment, rr *Route) {
 	rr.Vars = append(rr.Vars, vv)
 }
 
-func ParseToRoute(rule *HttpRule) *Route {
-	r := new(Route)
+func ParseToRoute(rule *HttpRule) *RoutePath {
+	r := new(RoutePath)
 	r.Verb = rule.Verb
 
 	if rule.Segments != nil {
@@ -183,4 +184,111 @@ func ParseToRoute(rule *HttpRule) *Route {
 
 func Parse(url string) (*HttpRule, error) {
 	return parser.ParseString("", url)
+}
+
+func NewRouteTree() *RouteTree {
+	return &RouteTree{nodes: make(map[string]*PathNode)}
+}
+
+type RouteTree struct {
+	nodes map[string]*PathNode
+}
+
+func (r *RouteTree) Add(method string, url string, operation string) error {
+	rule, err := Parse(url)
+	if err != nil {
+		return err
+	}
+
+	var node = ParseToRoute(rule)
+	if len(node.Paths) == 0 {
+		return fmt.Errorf("path is null")
+	}
+
+	var nodes = r.nodes
+	for i, n := range node.Paths {
+		var lastNode = nodes[n]
+		if lastNode == nil {
+			lastNode = &PathNode{
+				nodes: make(map[string]*PathNode),
+				verbs: make(map[string]*RouteTarget),
+			}
+			nodes[n] = lastNode
+		}
+		nodes = lastNode.nodes
+
+		if i == len(node.Paths)-1 {
+			lastNode.verbs[generic.FromPtr(node.Verb)] = &RouteTarget{
+				Method:    method,
+				Operation: &operation,
+				Verb:      &method,
+				Vars:      node.Vars,
+			}
+		}
+	}
+	return nil
+}
+
+func (r *RouteTree) Match(method, verb string, url string) (*MatchPath, error) {
+	var urls = strings.Split(strings.Trim(strings.TrimSpace(url), "/"), "/")
+	var getVars = func(vars []*pathVariable, urls []string) []PathVar {
+		var vv []PathVar
+		for _, v := range vars {
+			pathVar := PathVar{Fields: v.Fields}
+			if v.end > 0 {
+				pathVar.Value = strings.Join(urls[v.start:v.end+1], "/")
+			} else {
+				pathVar.Value = strings.Join(urls[v.start:], "/")
+			}
+
+			vv = append(vv, pathVar)
+		}
+		return vv
+	}
+	var getPath = func(nodes map[string]*PathNode, names ...string) *PathNode {
+		for _, n := range names {
+			path := nodes[n]
+			if path != nil {
+				return path
+			}
+		}
+		return nil
+	}
+
+	var nodes = r.nodes
+	for _, n := range urls {
+		path := getPath(nodes, n, Star, DoubleStar)
+		if path == nil {
+			return nil, errors.New("path is not match")
+		}
+
+		if vv := path.verbs[verb]; vv != nil && vv.Operation != nil && vv.Method == method {
+			return &MatchPath{
+				Operation: generic.FromPtr(vv.Operation),
+				Verb:      verb,
+				Vars:      getVars(vv.Vars, urls),
+			}, nil
+		}
+		nodes = path.nodes
+	}
+
+	return nil, errors.New("path is not match")
+}
+
+type RouteTarget struct {
+	Method    string
+	Operation *string
+	Verb      *string
+	Vars      []*pathVariable
+}
+
+type PathNode struct {
+	nodes map[string]*PathNode
+	verbs map[string]*RouteTarget
+}
+
+type MatchPath struct {
+	Operation string
+	Verb      string
+	Vars      []PathVar
 }

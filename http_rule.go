@@ -229,8 +229,16 @@ func (r *RouteTree) Add(method string, url string, operation string) error {
 	return nil
 }
 
-func (r *RouteTree) Match(method, verb string, url string) (*MatchPath, error) {
+func (r *RouteTree) Match(method, url string) (*MatchPath, error) {
 	var urls = strings.Split(strings.Trim(strings.TrimSpace(url), "/"), "/")
+	var lastPath = strings.SplitN(urls[len(urls)-1], ":", 2)
+	var verb = ""
+
+	urls[len(urls)-1] = lastPath[0]
+	if len(lastPath) > 1 {
+		verb = lastPath[1]
+	}
+
 	var getVars = func(vars []*pathVariable, urls []string) []PathVar {
 		var vv []PathVar
 		for _, v := range vars {

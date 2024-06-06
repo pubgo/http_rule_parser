@@ -58,3 +58,12 @@ func BenchmarkParse(b *testing.B) {
 		_, _ = parser.Parse("", r)
 	}
 }
+
+func TestRouteTree(t *testing.T) {
+	var tree = NewRouteTree()
+	asserts.Exit(tree.Add("get", url1, "get_test"))
+	pp, err := tree.Match("get", "/v1/users/hh/1111/hello/444/555/hhh/6666/messages/nn/ss/mm/ddd/44:change")
+	asserts.Exit(err)
+	pretty.Println(pp)
+	pretty.Println(tree.nodes)
+}

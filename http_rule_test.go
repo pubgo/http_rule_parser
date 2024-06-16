@@ -14,7 +14,7 @@ import (
 const url1 = "/v1/users/{aa.ba.ca=hh/*}/hello/{hello.abc}/*/hhh/*/messages/{messageId=nn/ss/**}:change"
 
 func TestMatch(t *testing.T) {
-	route := ParseToRoute(asserts.Exit1(Parse(url1)))
+	route := parseToRoute(asserts.Exit1(parse(url1)))
 	vars := asserts.Must1(route.Match([]string{"v1", "users", "hh", "123", "hello", "vvv", "*", "hhh", "*", "messages", "nn", "ss", "vv", "33"}, "change"))
 	asserts.If(len(vars) != 3, "not match")
 	asserts.If(vars[0].Value != "hh/123", "not match")
@@ -27,7 +27,7 @@ func TestMatch(t *testing.T) {
 }
 
 func BenchmarkRouteMatch(b *testing.B) {
-	route := ParseToRoute(asserts.Exit1(Parse(url1)))
+	route := parseToRoute(asserts.Exit1(parse(url1)))
 	for i := 0; i < b.N; i++ {
 		_ = asserts.Must1(route.Match([]string{"v1", "users", "hh", "123", "hello", "vvv", "*", "hhh", "*", "messages", "nn", "ss", "vv", "33"}, "change"))
 	}
@@ -40,14 +40,14 @@ func TestParse(t *testing.T) {
 	))
 
 	pretty.Println(ini)
-	pp := ParseToRoute(ini)
+	pp := parseToRoute(ini)
 	asserts.If(!reflect.DeepEqual(pp.Paths, []string{"v1", "users", "hh", "*", "hello", "*", "*", "hhh", "*", "messages", "nn", "ss", "**"}), "not match")
 	asserts.If(*pp.Verb != "change", "not match")
 	pretty.Println(pp)
 
 	t.Log(pp.String())
 	p1 := asserts.Must1(parser.Parse("", strings.NewReader(pp.String())))
-	if pp2 := ParseToRoute(p1).String(); pp2 != pp.String() {
+	if pp2 := parseToRoute(p1).String(); pp2 != pp.String() {
 		t.Fatal("not equal", pp2, pp.String())
 	}
 }

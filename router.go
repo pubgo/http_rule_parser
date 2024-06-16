@@ -61,10 +61,10 @@ func (r *RouteTree) Match(method, url string) (*MatchPath, error) {
 		verb = lastPath[1]
 	}
 
-	var getVars = func(vars []*pathVariable, urls []string) []PathVar {
-		var vv = make([]PathVar, 0, len(vars))
+	var getVars = func(vars []*pathVariable, urls []string) []pathVar {
+		var vv = make([]pathVar, 0, len(vars))
 		for _, v := range vars {
-			pathVar := PathVar{Fields: v.Fields}
+			pathVar := pathVar{Fields: v.Fields}
 			if v.end > 0 {
 				pathVar.Value = strings.Join(urls[v.start:v.end+1], "/")
 			} else {
@@ -120,5 +120,5 @@ type PathNode struct {
 type MatchPath struct {
 	Operation string
 	Verb      string
-	Vars      []PathVar
+	Vars      []pathVar
 }

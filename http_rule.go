@@ -60,18 +60,18 @@ type pathVariable struct {
 	start, end int
 }
 
-type RoutePath struct {
+type routePath struct {
 	Paths []string
 	Verb  *string
 	Vars  []*pathVariable
 }
 
-type PathVar struct {
+type pathVar struct {
 	Fields []string
 	Value  string
 }
 
-func (r RoutePath) Match(urls []string, verb string) ([]PathVar, error) {
+func (r routePath) Match(urls []string, verb string) ([]pathVar, error) {
 	if len(urls) < len(r.Paths) {
 		return nil, errors.New("urls length not match")
 	}
@@ -99,9 +99,9 @@ func (r RoutePath) Match(urls []string, verb string) ([]PathVar, error) {
 		return nil, errors.New("path is not match")
 	}
 
-	var vv []PathVar
+	var vv []pathVar
 	for _, v := range r.Vars {
-		pathVar := PathVar{Fields: v.Fields}
+		pathVar := pathVar{Fields: v.Fields}
 		if v.end > 0 {
 			pathVar.Value = strings.Join(urls[v.start:v.end+1], "/")
 		} else {
@@ -114,7 +114,7 @@ func (r RoutePath) Match(urls []string, verb string) ([]PathVar, error) {
 	return vv, nil
 }
 
-func (r RoutePath) String() string {
+func (r routePath) String() string {
 	url := "/"
 
 	paths := make([]string, len(r.Paths))
@@ -144,7 +144,7 @@ func (r RoutePath) String() string {
 	return url
 }
 
-func handleSegments(s *segment, rr *RoutePath) {
+func handleSegments(s *segment, rr *routePath) {
 	if s.Path != nil {
 		rr.Paths = append(rr.Paths, *s.Path)
 		return
@@ -168,8 +168,8 @@ func handleSegments(s *segment, rr *RoutePath) {
 	rr.Vars = append(rr.Vars, vv)
 }
 
-func parseToRoute(rule *httpRule) *RoutePath {
-	r := new(RoutePath)
+func parseToRoute(rule *httpRule) *routePath {
+	r := new(routePath)
 	r.Verb = rule.Verb
 
 	if rule.Segments != nil {

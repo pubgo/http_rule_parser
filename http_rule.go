@@ -240,7 +240,7 @@ func (r *RouteTree) Match(method, url string) (*MatchPath, error) {
 	}
 
 	var getVars = func(vars []*pathVariable, urls []string) []PathVar {
-		var vv []PathVar
+		var vv = make([]PathVar, 0, len(vars))
 		for _, v := range vars {
 			pathVar := PathVar{Fields: v.Fields}
 			if v.end > 0 {
@@ -267,7 +267,7 @@ func (r *RouteTree) Match(method, url string) (*MatchPath, error) {
 	for _, n := range urls {
 		path := getPath(nodes, n, Star, DoubleStar)
 		if path == nil {
-			return nil, errors.New("path is not match")
+			return nil, errors.Format("path node not match, node=%s", n)
 		}
 
 		if vv := path.verbs[verb]; vv != nil && vv.Operation != nil && vv.Method == method {
@@ -280,7 +280,7 @@ func (r *RouteTree) Match(method, url string) (*MatchPath, error) {
 		nodes = path.nodes
 	}
 
-	return nil, errors.New("path is not match")
+	return nil, errors.New("path not match")
 }
 
 type RouteTarget struct {

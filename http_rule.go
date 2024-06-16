@@ -23,7 +23,7 @@ var (
 		{Name: "Punct", Pattern: `[-[!@#$%^&*()+_={}\|:;"'<,>.?/]|]`},
 	}))
 
-	parser = assert.Exit1(participle.Build[HttpRule](
+	parser = assert.Exit1(participle.Build[httpRule](
 		participle.Lexer(lex),
 	))
 )
@@ -36,24 +36,24 @@ var (
 //     FieldPath = IDENT { "." IDENT } ;
 //     Verb     = ":" LITERAL ;
 
-type HttpRule struct {
+type httpRule struct {
 	Slash    string    `@"/"`
-	Segments *Segments `@@!`
+	Segments *segments `@@!`
 	Verb     *string   `(":" @Ident)?`
 }
 
-type Segments struct {
-	Segments []*Segment `@@ ("/" @@)*`
+type segments struct {
+	Segments []*segment `@@ ("/" @@)*`
 }
 
-type Segment struct {
+type segment struct {
 	Path     *string   `@("*" "*" | "*" | Ident)`
-	Variable *Variable `| @@`
+	Variable *variable `| @@`
 }
 
-type Variable struct {
+type variable struct {
 	Fields   []string  `"{" @Ident ("." @Ident)*`
-	Segments *Segments `("=" @@)? "}"`
+	Segments *segments `("=" @@)? "}"`
 }
 
 type pathVariable struct {
@@ -145,7 +145,7 @@ func (r RoutePath) String() string {
 	return url
 }
 
-func handleSegments(s *Segment, rr *RoutePath) {
+func handleSegments(s *segment, rr *RoutePath) {
 	if s.Path != nil {
 		rr.Paths = append(rr.Paths, *s.Path)
 		return
@@ -169,7 +169,7 @@ func handleSegments(s *Segment, rr *RoutePath) {
 	rr.Vars = append(rr.Vars, vv)
 }
 
-func ParseToRoute(rule *HttpRule) *RoutePath {
+func ParseToRoute(rule *httpRule) *RoutePath {
 	r := new(RoutePath)
 	r.Verb = rule.Verb
 
@@ -182,7 +182,7 @@ func ParseToRoute(rule *HttpRule) *RoutePath {
 	return r
 }
 
-func Parse(url string) (*HttpRule, error) {
+func Parse(url string) (*httpRule, error) {
 	return parser.ParseString("", url)
 }
 

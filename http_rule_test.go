@@ -26,7 +26,7 @@ func TestMatch(t *testing.T) {
 	pretty.Println(vars)
 }
 
-func BenchmarkMatch(b *testing.B) {
+func BenchmarkRouteMatch(b *testing.B) {
 	route := ParseToRoute(asserts.Exit1(Parse(url1)))
 	for i := 0; i < b.N; i++ {
 		_ = asserts.Must1(route.Match([]string{"v1", "users", "hh", "123", "hello", "vvv", "*", "hhh", "*", "messages", "nn", "ss", "vv", "33"}, "change"))
@@ -66,4 +66,12 @@ func TestRouteTree(t *testing.T) {
 	asserts.Exit(err)
 	pretty.Println(pp)
 	pretty.Println(tree.nodes)
+}
+
+func BenchmarkMatch(b *testing.B) {
+	var tree = NewRouteTree()
+	asserts.Exit(tree.Add("get", url1, "get_test"))
+	for i := 0; i < b.N; i++ {
+		_, _ = tree.Match("get", "/v1/users/hh/1111/hello/444/555/hhh/6666/messages/nn/ss/mm/ddd/44:change")
+	}
 }

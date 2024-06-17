@@ -1,19 +1,18 @@
-package http_rule
+package http_rule_parser
 
 import (
 	"strings"
 
-	"github.com/pubgo/funk/assert"
-	"github.com/pubgo/funk/errors"
-
 	"github.com/alecthomas/participle/v2"
 	"github.com/alecthomas/participle/v2/lexer"
+	"github.com/pubgo/funk/assert"
+	"github.com/pubgo/funk/errors"
 	"github.com/pubgo/funk/generic"
 )
 
 const (
-	DoubleStar = "**"
-	Star       = "*"
+	doubleStar = "**"
+	star       = "*"
 )
 
 var (
@@ -27,14 +26,13 @@ var (
 	))
 )
 
-//     http rule
-//     Template = "/" Segments [ Verb ] ;
-//     Segments = Segment { "/" Segment } ;
-//     Segment  = "*" | "**" | LITERAL | Variable ;
-//     Variable = "{" FieldPath [ "=" Segments ] "}" ;
-//     FieldPath = IDENT { "." IDENT } ;
-//     Verb     = ":" LITERAL ;
-
+// httpRule
+// Template = "/" Segments [ Verb ] ;
+// Segments = Segment { "/" Segment } ;
+// Segment  = "*" | "**" | LITERAL | Variable ;
+// Variable = "{" FieldPath [ "=" Segments ] "}" ;
+// FieldPath = IDENT { "." IDENT } ;
+// Verb     = ":" LITERAL ;
 type httpRule struct {
 	Slash    string    `@"/"`
 	Segments *segments `@@!`
@@ -66,12 +64,12 @@ type routePath struct {
 	Vars  []*pathVariable
 }
 
-type pathVar struct {
+type PathVar struct {
 	Fields []string
 	Value  string
 }
 
-func (r routePath) Match(urls []string, verb string) ([]pathVar, error) {
+func (r routePath) Match(urls []string, verb string) ([]PathVar, error) {
 	if len(urls) < len(r.Paths) {
 		return nil, errors.New("urls length not match")
 	}
@@ -84,7 +82,7 @@ func (r routePath) Match(urls []string, verb string) ([]pathVar, error) {
 
 	for i := range r.Paths {
 		path := r.Paths[i]
-		if path == Star {
+		if path == star {
 			continue
 		}
 
@@ -92,16 +90,16 @@ func (r routePath) Match(urls []string, verb string) ([]pathVar, error) {
 			continue
 		}
 
-		if path == DoubleStar {
+		if path == doubleStar {
 			continue
 		}
 
 		return nil, errors.New("path is not match")
 	}
 
-	var vv []pathVar
+	var vv []PathVar
 	for _, v := range r.Vars {
-		pathVar := pathVar{Fields: v.Fields}
+		pathVar := PathVar{Fields: v.Fields}
 		if v.end > 0 {
 			pathVar.Value = strings.Join(urls[v.start:v.end+1], "/")
 		} else {
@@ -152,14 +150,14 @@ func handleSegments(s *segment, rr *routePath) {
 
 	vv := &pathVariable{Fields: s.Variable.Fields, start: len(rr.Paths)}
 	if s.Variable.Segments == nil {
-		rr.Paths = append(rr.Paths, Star)
+		rr.Paths = append(rr.Paths, star)
 	} else {
 		for _, v := range s.Variable.Segments.Segments {
 			handleSegments(v, rr)
 		}
 	}
 
-	if len(rr.Paths) > 0 && rr.Paths[len(rr.Paths)-1] == DoubleStar {
+	if len(rr.Paths) > 0 && rr.Paths[len(rr.Paths)-1] == doubleStar {
 		vv.end = -1
 	} else {
 		vv.end = len(rr.Paths) - 1

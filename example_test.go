@@ -1,4 +1,4 @@
-package http_rule
+package http_rule_parser
 
 import (
 	asserts "github.com/pubgo/funk/assert"

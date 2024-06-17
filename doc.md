@@ -8,21 +8,33 @@ import "github.com/pubgo/http_rule_parser"
 
 ## Index
 
-- [type MatchPath](<#MatchPath>)
+- [Variables](<#variables>)
+- [type MatchOperation](<#MatchOperation>)
 - [type PathVar](<#PathVar>)
 - [type RouteTree](<#RouteTree>)
   - [func NewRouteTree\(\) \*RouteTree](<#NewRouteTree>)
   - [func \(r \*RouteTree\) Add\(method string, url string, operation string\) error](<#RouteTree.Add>)
-  - [func \(r \*RouteTree\) Match\(method, url string\) \(\*MatchPath, error\)](<#RouteTree.Match>)
+  - [func \(r \*RouteTree\) Match\(method, url string\) \(\*MatchOperation, error\)](<#RouteTree.Match>)
 
 
-<a name="MatchPath"></a>
-## type MatchPath
+## Variables
+
+<a name="ErrPathNodeNotFound"></a>
+
+```go
+var (
+    ErrPathNodeNotFound = errors.New("path node not found")
+    ErrNotFound         = errors.New("operation not found")
+)
+```
+
+<a name="MatchOperation"></a>
+## type MatchOperation
 
 
 
 ```go
-type MatchPath struct {
+type MatchOperation struct {
     Operation string
     Verb      string
     Vars      []PathVar
@@ -97,7 +109,7 @@ func (r *RouteTree) Add(method string, url string, operation string) error
 ### func \(\*RouteTree\) Match
 
 ```go
-func (r *RouteTree) Match(method, url string) (*MatchPath, error)
+func (r *RouteTree) Match(method, url string) (*MatchOperation, error)
 ```
 
 
